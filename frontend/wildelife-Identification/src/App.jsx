@@ -135,6 +135,10 @@ function Navbar() {
           ))}
         </ul>
 
+        <button className="wl-btn wl-btn-primary" onClick={() => go("login")}>
+           Sign In
+        </button>
+
         <button
           className="wl-nav-toggle"
           aria-label={open ? "Close menu" : "Open menu"}
@@ -750,11 +754,108 @@ function ContactPage() {
   );
 }
 
+
+
+
+/* ------------------------------------------------------------------ */
+/* LOGIN PAGE — matches this app's usePage()/navigate() router          */
+/* ------------------------------------------------------------------ */
+
+// Adjust to your real auth route.
+// Expected response on success: { token, user: { name, email, role } }
+const LOGIN_API_URL = "/api/auth/login";
+
+function LoginPage() {
+  const { navigate, showToast } = usePage();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      showToast("Please enter your email and password.", "error");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(LOGIN_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Invalid email or password.");
+      }
+
+      localStorage.setItem("token", data.token);
+      showToast(`Welcome back, ${data.user.name}!`, "success");
+      navigate("home");
+    } catch (err) {
+      showToast(err.message || "Something went wrong. Please try again.", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="wl-page">
+      <div className="wl-page-inner" style={{ maxWidth: 420 }}>
+        <p className="wl-eyebrow">Welcome Back</p>
+        <h1 className="wl-page-title">Sign In</h1>
+        <p className="wl-page-lede">Use the email and password on your account.</p>
+
+        <form className="wl-form" onSubmit={submit} noValidate style={{ marginTop: 26 }}>
+          <label className="wl-field">
+            <span>Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
+          </label>
+
+          <label className="wl-field">
+            <span>Password</span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="wl-btn wl-btn-ghost"
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </label>
+
+          <button type="submit" className="wl-btn wl-btn-primary wl-btn-block" disabled={submitting}>
+            {submitting ? "Signing in…" : "Sign In"}
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+}
 /* ------------------------------------------------------------------ */
 /* APP SHELL                                                          */
 /* ------------------------------------------------------------------ */
 
 const PAGE_COMPONENTS = {
+  "login": LoginPage,
   "home": HomePage,
   "about": AboutPage,
   "results": ResultsPage,
